@@ -1,8 +1,8 @@
-﻿<!DOCTYPE html><html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Habit Tracker Pro</title>
+<title>Habit Tracker Pro+</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f5f5f5; }
@@ -14,7 +14,7 @@ input, select { width:100%; padding:8px; margin-top:5px; }
 canvas { max-width:100%; }
 </style>
 </head>
-<body><h1>Habit Tracker Pro</h1>
+<body><h1>Habit Tracker Pro+</h1>
 <p id="dayType" style="text-align:center"></p><div class="card">
 <h2>Core Habits</h2>
 <button onclick="toggle(this)">Morning Study ✘</button>
@@ -23,11 +23,11 @@ canvas { max-width:100%; }
 <button onclick="toggle(this)">Planning ✘</button>
 <button onclick="toggle(this)">Logging ✘</button>
 </div><div class="card">
-<h2>Select Subjects (min 2)</h2>
-<select id="subject1"></select>
-<select id="subject2"></select>
-<select id="subject3"></select>
-<select id="subject4"></select>
+<h2>Subjects + Time (min)</h2>
+<select id="subject"></select>
+<input type="number" id="time" placeholder="Minutes studied">
+<button onclick="addSession()">Add Session</button>
+<ul id="sessionList"></ul>
 </div><div class="card">
 <h2>Output</h2>
 <input type="number" id="problems" placeholder="Problems">
@@ -37,10 +37,12 @@ canvas { max-width:100%; }
 <button onclick="calculateScore()">Calculate Score</button>
 <h2 id="score"></h2>
 <h3 id="streak"></h3>
+<h3 id="quality"></h3>
 </div><div class="card">
 <h2>Weekly Chart</h2>
 <canvas id="chart"></canvas>
 <h3 id="avg"></h3>
+<h3 id="weak"></h3>
 </div><script>
 const subjects = [
 "Physics Theory","Physics Practical","Chemistry Theory","Chemistry Practical",
@@ -49,18 +51,30 @@ const subjects = [
 "Maths","English","Workshop Theory","Workshop Practice"
 ];
 
+let sessions = [];
 
 function loadSubjects(){
-  for(let i=1;i<=4;i++){
-    let sel = document.getElementById("subject"+i);
-    subjects.forEach(s=>{
-      let opt = document.createElement("option");
-      opt.value=s; opt.text=s;
-      sel.appendChild(opt);
-    });
-  }
+  let sel = document.getElementById("subject");
+  subjects.forEach(s=>{
+    let opt = document.createElement("option");
+    opt.value=s; opt.text=s;
+    sel.appendChild(opt);
+  });
 }
 
+function addSession(){
+  let subj = document.getElementById("subject").value;
+  let time = +document.getElementById("time").value;
+  if(!time) return;
+
+  sessions.push({subj,time});
+
+  let li = document.createElement("li");
+  li.innerText = subj + " - " + time + " min";
+  document.getElementById("sessionList").appendChild(li);
+
+  saveData();
+}
 
 function toggle(btn){
   if(btn.innerText.includes("✘")){
@@ -73,13 +87,11 @@ function toggle(btn){
   saveData();
 }
 
-
 function getDayType(){
   const d = new Date().getDate();
   const type = ["A","B","C","D"][d % 4];
   document.getElementById("dayType").innerText = "Day Type: " + type;
 }
-
 
 function calculateScore(){
   let core = 0;
@@ -87,114 +99,85 @@ function calculateScore(){
     if(btn.innerText.includes("✔")) core++;
   });
 
+  let totalTime = sessions.reduce((a,b)=>a+b.time,0);
+  let subjectScore = sessions.length>=2 ? 4 : 0;
 
-  let selected = [subject1.value, subject2.value, subject3.value, subject4.value]
-  let subjectScore = selected.filter(s=>s).length>=2 ? 4 : 0;
-
-
-  let problems = +problemsInput.value || 0;
-  let pages = +pagesInput.value || 0;
-  let concepts = +conceptsInput.value || 0;
-
+  let problems = +problems.value || 0;
+  let pages = +pages.value || 0;
+  let concepts = +concepts.value || 0;
 
   let output = (problems>=20 || pages>=10 || concepts>=2)?3:0;
   let total = core + subjectScore + output;
 
-
   document.getElementById("score").innerText = "Score: "+total+"/12";
 
+  // streak quality
+  let streak = +localStorage.getItem("streak")||0;
+  if(total>=7) streak++; else streak=0;
+  localStorage.setItem("streak",streak);
 
-  updateStreak(total);
-  saveScore(total);
+  let quality = total>=9 ? "Strong" : total>=7 ? "Weak" : "Broken";
+
+  document.getElementById("streak").innerText = "Streak: "+streak;
+  document.getElementById("quality").innerText = "Streak Quality: "+quality;
+
+  saveScore(total, totalTime);
   saveData();
 }
 
-
-// STREAK
-function updateStreak(score){
-  let streak = +localStorage.getItem("streak") || 0;
-  if(score>=7) streak++; else streak=0;
-  localStorage.setItem("streak",streak);
-  document.getElementById("streak").innerText = "Streak: "+streak;
-}
-
-
-// SAVE
 function saveData(){
-  let data = {
-    buttons: Array.from(document.querySelectorAll(".card button")).map(b=>b.innerText),
-    subjects: [subject1.value,subject2.value,subject3.value,subject4.value],
-    problems: problemsInput.value,
-    pages: pagesInput.value,
-    concepts: conceptsInput.value
-  };
-  localStorage.setItem("data",JSON.stringify(data));
+  localStorage.setItem("sessions",JSON.stringify(sessions));
 }
-
 
 function loadData(){
-  let data = JSON.parse(localStorage.getItem("data"));
-  if(!data) return;
-
-
-  document.querySelectorAll(".card button").forEach((b,i)=>{
-    b.innerText = data.buttons[i];
-    if(b.innerText.includes("✔")) b.classList.add("done");
+  sessions = JSON.parse(localStorage.getItem("sessions"))||[];
+  sessions.forEach(s=>{
+    let li = document.createElement("li");
+    li.innerText = s.subj + " - " + s.time + " min";
+    document.getElementById("sessionList").appendChild(li);
   });
-
-
-  [subject1,subject2,subject3,subject4].forEach((s,i)=> s.value=data.subjects[i]);
-  problemsInput.value=data.problems;
-  pagesInput.value=data.pages;
-  conceptsInput.value=data.concepts;
 }
 
-
-// CHART
 let chart;
-function saveScore(score){
+function saveScore(score,time){
   let history = JSON.parse(localStorage.getItem("scores"))||[];
   let today = new Date().toLocaleDateString();
 
-
-  history.push({date:today,score});
+  history.push({date:today,score,time});
   if(history.length>7) history.shift();
-
 
   localStorage.setItem("scores",JSON.stringify(history));
   renderChart();
 }
 
-
 function renderChart(){
   let history = JSON.parse(localStorage.getItem("scores"))||[];
+
   let labels = history.map(h=>h.date);
   let data = history.map(h=>h.score);
 
-
   if(chart) chart.destroy();
-
 
   chart = new Chart(document.getElementById("chart"),{
     type:'line',
     data:{ labels:labels, datasets:[{data:data}] }
   });
 
-
   let avg = data.length? (data.reduce((a,b)=>a+b)/data.length).toFixed(2):0;
-  document.getElementById("avg").innerText = "Weekly Avg: "+avg;
+  document.getElementById("avg").innerText = "Weekly Avg Score: "+avg;
+
+  // weak subject detection
+  let subjectCount = {};
+  sessions.forEach(s=>{
+    subjectCount[s.subj]=(subjectCount[s.subj]||0)+1;
+  });
+
+  let weak = Object.entries(subjectCount)
+    .filter(([k,v])=>v<2)
+    .map(([k])=>k);
+
+  document.getElementById("weak").innerText = "Weak Subjects: "+ (weak.join(", ")||"None");
 }
-
-
-// INIT
-const subject1=document.getElementById("subject1");
-const subject2=document.getElementById("subject2");
-const subject3=document.getElementById("subject3");
-const subject4=document.getElementById("subject4");
-const problemsInput=document.getElementById("problems");
-const pagesInput=document.getElementById("pages");
-const conceptsInput=document.getElementById("concepts");
-
 
 loadSubjects();
 getDayType();
