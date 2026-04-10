@@ -126,9 +126,7 @@ function toggle(btn){
 }
 
 function getDayType(){
-  const d = new Date().getDate();
-  const type = ["A","B","C","D"][d % 4];
-  document.getElementById("dayType").innerText = "Day Type: " + type;
+  document.getElementById("dayType").innerText = "Smart Study Mode Active";
 }
 
 function calculateScore(){
