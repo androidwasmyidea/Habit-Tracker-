@@ -2,7 +2,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Habit Tracker Pro+</title>
+<title>Academic Performance System</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body { font-family: Arial; margin:0; padding:10px; background:#f5f5f5; }
@@ -14,16 +14,19 @@ input, select { width:100%; padding:8px; margin-top:5px; }
 canvas { max-width:100%; }
 </style>
 </head>
-<body><h1>Habit Tracker Pro+</h1>
-<p id="dayType" style="text-align:center"></p><div class="card">
-<h2>Core Habits</h2>
+<body><h1>Academic Performance System</h1>
+<p id="dayType" style="text-align:center"></p>
+<p style="text-align:center; font-size:14px; color:gray;">
+Day Type rotates (A/B/C/D) based on the date. It is used to structure variety in your study routine so that not all subjects are done every day, preventing overload and ensuring balanced coverage across the week.
+</p><div class="card">
+<h2>Habits</h2>
 <button onclick="toggle(this)">Morning Study ✘</button>
 <button onclick="toggle(this)">Afternoon Study ✘</button>
 <button onclick="toggle(this)">Night Review ✘</button>
 <button onclick="toggle(this)">Planning ✘</button>
 <button onclick="toggle(this)">Logging ✘</button>
 </div><div class="card">
-<h2>Subjects + Time (min)</h2>
+<h2>Study Session Log</h2>
 <select id="subject"></select>
 <input type="number" id="time" placeholder="Minutes studied">
 <button onclick="addSession()">Add Session</button>
