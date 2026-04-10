@@ -5,48 +5,55 @@
 <title>Academic Performance System</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial; margin:0; padding:10px; background:#f5f5f5; }
-h1,h2 { text-align:center; }
-.card { background:white; padding:12px; border-radius:10px; margin-bottom:12px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-button { width:100%; padding:10px; font-size:16px; border:none; border-radius:6px; margin-top:5px; }
+body { font-family: Arial, sans-serif; margin:0; padding:12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#333; }
+h1 { text-align:center; color:white; margin-bottom:5px; }
+p { color:#ddd; }
+.card { background:white; padding:14px; border-radius:14px; margin-bottom:14px; box-shadow:0 4px 10px rgba(0,0,0,0.15); }
+h2 { text-align:center; margin-bottom:10px; }
+button { width:100%; padding:10px; font-size:15px; border:none; border-radius:8px; margin-top:6px; background:#eee; }
+button:hover { opacity:0.9; }
 .done { background:#4CAF50; color:white; }
-input, select { width:100%; padding:8px; margin-top:5px; }
+input, select { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #ccc; }
 canvas { max-width:100%; }
+.small-text { font-size:13px; text-align:center; }
+.footer { text-align:center; font-size:12px; color:#ccc; margin-top:20px; }
 </style>
 </head>
 <body><h1>Academic Performance System</h1>
-<p id="dayType" style="text-align:center"></p>
-<p style="text-align:center; font-size:14px; color:gray;">
-Day Type rotates (A/B/C/D) based on the date. It is used to structure variety in your study routine so that not all subjects are done every day, preventing overload and ensuring balanced coverage across the week.
+<p id="dayType" class="small-text"></p>
+<p class="small-text">
+Day Type rotates (A/B/C/D) to distribute subjects and avoid overload.
 </p><div class="card">
 <h2>Habits</h2>
-<button onclick="toggle(this)">Morning Study ✘</button>
-<button onclick="toggle(this)">Afternoon Study ✘</button>
-<button onclick="toggle(this)">Night Review ✘</button>
+<button onclick="toggle(this)">Morning ✘</button>
+<button onclick="toggle(this)">Afternoon ✘</button>
+<button onclick="toggle(this)">Night ✘</button>
 <button onclick="toggle(this)">Planning ✘</button>
 <button onclick="toggle(this)">Logging ✘</button>
 </div><div class="card">
 <h2>Study Session Log</h2>
 <select id="subject"></select>
 <input type="number" id="time" placeholder="Minutes studied">
-<button onclick="addSession()">Add Session</button>
+<button onclick="addSession()" style="background:#667eea; color:white;">Add Session</button>
 <ul id="sessionList"></ul>
+<h3 id="totalTime">Total Time: 0 min</h3>
+<button onclick="resetDay()" style="background:#ff6b6b; color:white;">Reset Today</button>
 </div><div class="card">
-<h2>Output</h2>
+<h2>Academic Output Metrics</h2>
 <input type="number" id="problems" placeholder="Problems">
 <input type="number" id="pages" placeholder="Pages">
 <input type="number" id="concepts" placeholder="Concepts">
 </div><div class="card">
-<button onclick="calculateScore()">Calculate Score</button>
+<button onclick="calculateScore()" style="background:#28a745; color:white;">Calculate Performance</button>
 <h2 id="score"></h2>
 <h3 id="streak"></h3>
 <h3 id="quality"></h3>
 </div><div class="card">
-<h2>Weekly Chart</h2>
+<h2>Weekly Performance</h2>
 <canvas id="chart"></canvas>
 <h3 id="avg"></h3>
 <h3 id="weak"></h3>
-</div><script>
+</div><p class="footer">© 2026 Ibtehaj • v1.0</p><script>
 const subjects = [
 "Physics Theory","Physics Practical","Chemistry Theory","Chemistry Practical",
 "Civil Theory","Civil Practical","Mechanical Theory","Mechanical Lab",
@@ -65,18 +72,46 @@ function loadSubjects(){
   });
 }
 
+function updateTotalTime(){
+  let total = sessions.reduce((a,b)=>a+b.time,0);
+  document.getElementById("totalTime").innerText = "Total Time: " + total + " min";
+}
+
 function addSession(){
   let subj = document.getElementById("subject").value;
   let time = +document.getElementById("time").value;
   if(!time) return;
 
   sessions.push({subj,time});
-
-  let li = document.createElement("li");
-  li.innerText = subj + " - " + time + " min";
-  document.getElementById("sessionList").appendChild(li);
-
+  renderSessions();
+  updateTotalTime();
   saveData();
+}
+
+function renderSessions(){
+  let list = document.getElementById("sessionList");
+  list.innerHTML = "";
+  sessions.forEach((s,i)=>{
+    let li = document.createElement("li");
+    li.innerHTML = `${s.subj} - ${s.time} min <button onclick="removeSession(${i})">❌</button>`;
+    list.appendChild(li);
+  });
+}
+
+function removeSession(index){
+  sessions.splice(index,1);
+  saveData();
+  renderSessions();
+  updateTotalTime();
+}
+
+function resetDay(){
+  if(confirm("Reset today's data?")){
+    sessions = [];
+    localStorage.removeItem("sessions");
+    renderSessions();
+    updateTotalTime();
+  }
 }
 
 function toggle(btn){
@@ -105,16 +140,17 @@ function calculateScore(){
   let totalTime = sessions.reduce((a,b)=>a+b.time,0);
   let subjectScore = sessions.length>=2 ? 4 : 0;
 
-  let problems = +problems.value || 0;
-  let pages = +pages.value || 0;
-  let concepts = +concepts.value || 0;
+  let problems = +document.getElementById("problems").value || 0;
+  let pages = +document.getElementById("pages").value || 0;
+  let concepts = +document.getElementById("concepts").value || 0;
 
   let output = (problems>=20 || pages>=10 || concepts>=2)?3:0;
   let total = core + subjectScore + output;
 
-  document.getElementById("score").innerText = "Score: "+total+"/12";
+  let targetMet = totalTime >= 180;
 
-  // streak quality
+  document.getElementById("score").innerText = "Score: "+total+"/12 " + (targetMet?"(Target Met)":"(Below Target)");
+
   let streak = +localStorage.getItem("streak")||0;
   if(total>=7) streak++; else streak=0;
   localStorage.setItem("streak",streak);
@@ -124,7 +160,7 @@ function calculateScore(){
   document.getElementById("streak").innerText = "Streak: "+streak;
   document.getElementById("quality").innerText = "Streak Quality: "+quality;
 
-  saveScore(total, totalTime);
+  saveScore(total);
   saveData();
 }
 
@@ -134,19 +170,16 @@ function saveData(){
 
 function loadData(){
   sessions = JSON.parse(localStorage.getItem("sessions"))||[];
-  sessions.forEach(s=>{
-    let li = document.createElement("li");
-    li.innerText = s.subj + " - " + s.time + " min";
-    document.getElementById("sessionList").appendChild(li);
-  });
+  renderSessions();
+  updateTotalTime();
 }
 
 let chart;
-function saveScore(score,time){
+function saveScore(score){
   let history = JSON.parse(localStorage.getItem("scores"))||[];
   let today = new Date().toLocaleDateString();
 
-  history.push({date:today,score,time});
+  history.push({date:today,score});
   if(history.length>7) history.shift();
 
   localStorage.setItem("scores",JSON.stringify(history));
@@ -169,7 +202,6 @@ function renderChart(){
   let avg = data.length? (data.reduce((a,b)=>a+b)/data.length).toFixed(2):0;
   document.getElementById("avg").innerText = "Weekly Avg Score: "+avg;
 
-  // weak subject detection
   let subjectCount = {};
   sessions.forEach(s=>{
     subjectCount[s.subj]=(subjectCount[s.subj]||0)+1;
@@ -186,6 +218,5 @@ loadSubjects();
 getDayType();
 loadData();
 renderChart();
-</script><p style="text-align:center; font-size:12px; color:gray; margin-top:20px;">© 2026 Ibtehaj • v1.0</p>
-</body>
+</script></body>
 </html>
