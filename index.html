@@ -32,9 +32,12 @@ Focus on weak or less-studied subjects. Mark sessions done for submission separa
 <button onclick="toggle(this)">Logging ✘</button>
 </div><div class="card">
 <h2>Study Session Log</h2>
-<select id="subject"></select>
-<input type="number" id="time" placeholder="Minutes studied">
-<label><input type="checkbox" id="submission"> Submission Work</label>
+<select id="subject" style="margin-bottom:8px;"></select>
+<input type="number" id="time" placeholder="Minutes studied" style="margin-bottom:8px;">
+<div style="display:flex; align-items:center; justify-content:space-between; width:95%; margin:10px auto 0 auto;">
+  <span style="font-size:14px;">Submission / Deadline Work</span>
+  <input type="checkbox" id="submission" style="transform:scale(1.3);">
+</div>
 <button onclick="addSession()" style="background:#667eea; color:white;">Add Session</button>
 <ul id="sessionList"></ul>
 <h3 id="totalTime">Total Time: 0 min</h3>
