@@ -20,9 +20,9 @@ canvas { max-width:100%; }
 </style>
 </head>
 <body><h1>Academic Performance System</h1>
-<p id="dayType" class="small-text"></p>
+<p id="dayType" class="small-text">Smart Study Mode Active</p>
 <p class="small-text">
-Day Type rotates (A/B/C/D) to distribute subjects and avoid overload.
+Focus on weak or less-studied subjects. Mark sessions done for submission separately.
 </p><div class="card">
 <h2>Habits</h2>
 <button onclick="toggle(this)">Morning ✘</button>
@@ -34,6 +34,7 @@ Day Type rotates (A/B/C/D) to distribute subjects and avoid overload.
 <h2>Study Session Log</h2>
 <select id="subject"></select>
 <input type="number" id="time" placeholder="Minutes studied">
+<label><input type="checkbox" id="submission"> Submission Work</label>
 <button onclick="addSession()" style="background:#667eea; color:white;">Add Session</button>
 <ul id="sessionList"></ul>
 <h3 id="totalTime">Total Time: 0 min</h3>
@@ -80,9 +81,10 @@ function updateTotalTime(){
 function addSession(){
   let subj = document.getElementById("subject").value;
   let time = +document.getElementById("time").value;
+  let submission = document.getElementById("submission").checked;
   if(!time) return;
 
-  sessions.push({subj,time});
+  sessions.push({subj,time,submission});
   renderSessions();
   updateTotalTime();
   saveData();
@@ -92,8 +94,9 @@ function renderSessions(){
   let list = document.getElementById("sessionList");
   list.innerHTML = "";
   sessions.forEach((s,i)=>{
+    let tag = s.submission ? "(Submission)" : "";
     let li = document.createElement("li");
-    li.innerHTML = `${s.subj} - ${s.time} min <button onclick="removeSession(${i})">❌</button>`;
+    li.innerHTML = `${s.subj} - ${s.time} min ${tag} <button onclick="removeSession(${i})">❌</button>`;
     list.appendChild(li);
   });
 }
@@ -125,18 +128,16 @@ function toggle(btn){
   saveData();
 }
 
-function getDayType(){
-  document.getElementById("dayType").innerText = "Smart Study Mode Active";
-}
-
 function calculateScore(){
   let core = 0;
   document.querySelectorAll(".card button").forEach(btn=>{
     if(btn.innerText.includes("✔")) core++;
   });
 
+  let normalSessions = sessions.filter(s=>!s.submission);
+
   let totalTime = sessions.reduce((a,b)=>a+b.time,0);
-  let subjectScore = sessions.length>=2 ? 4 : 0;
+  let subjectScore = normalSessions.length>=2 ? 4 : 0;
 
   let problems = +document.getElementById("problems").value || 0;
   let pages = +document.getElementById("pages").value || 0;
@@ -201,7 +202,7 @@ function renderChart(){
   document.getElementById("avg").innerText = "Weekly Avg Score: "+avg;
 
   let subjectCount = {};
-  sessions.forEach(s=>{
+  sessions.filter(s=>!s.submission).forEach(s=>{
     subjectCount[s.subj]=(subjectCount[s.subj]||0)+1;
   });
 
@@ -213,7 +214,6 @@ function renderChart(){
 }
 
 loadSubjects();
-getDayType();
 loadData();
 renderChart();
 </script></body>
